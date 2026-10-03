@@ -1,0 +1,328 @@
+<title>Lantern Guide to the Nether</title>
+<meta name="description" content="Gordon's own guide to the Gordtopia Nether: what to pack, how to read your way home, and what to do when something big happens.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Young+Serif&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Silkscreen&display=swap" rel="stylesheet">
+<!-- STYLE: Lantern-lit papercut trail map (layered paper scenes, amber lantern light on deep crimson, the route drawn like a hiking trail) | WHY: a scared, lost player needs warmth and one clear path, not a wiki | ALT: a parchment field journal, if he wants it to read like an explorer's notebook -->
+<style>
+/* Layout: one lantern-lit trail down the page, stations in the order of a real trip (pack, step through, read your way, handle the big moments, road home), each station a papercut scene beside plain steps. Dark by design: the Nether is dark, the lanterns are the only light. */
+:root{
+  --night:#130a12; --crimson:#3a0c17; --crimson-2:#5a1424; --ember:#ff8a2b; --lantern:#ffd27a;
+  --portal:#b48cff; --paper:#f8ead2; --ash:#c9b4ac; --ok:#9be3a6; --line:#ffd27a33;
+  --display:"Young Serif",Georgia,"Times New Roman",serif;
+  --body:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --pixel:"Silkscreen","Courier New",ui-monospace,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--night);color:var(--paper);font:400 18px/1.6 var(--body);-webkit-font-smoothing:antialiased}
+img{max-width:100%;display:block}
+a{color:var(--lantern)}
+:focus-visible{outline:3px solid var(--lantern);outline-offset:3px;border-radius:6px}
+h1,h2,h3{font-family:var(--display);font-weight:400;line-height:1.08;text-wrap:balance;margin:0}
+p{margin:0}
+.pix{font-family:var(--pixel);font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--lantern)}
+.wrap{padding-inline:max(16px,calc((100vw - 1080px)/2));}
+
+/* top bar */
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;display:flex;gap:10px;align-items:center;justify-content:space-between;padding-block:10px;background:linear-gradient(var(--night) 70%,transparent)}
+.bar b{font-family:var(--display);font-weight:400;font-size:18px}
+.chip{appearance:none;border:1px solid var(--line);background:#ffffff0d;color:var(--paper);font:700 14px var(--body);padding:9px 14px;border-radius:999px;min-height:44px;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--lantern);color:var(--night);border-color:var(--lantern)}
+
+/* hero */
+.hero{position:relative;isolation:isolate;min-height:min(78vh,720px);display:grid;align-items:end;overflow:hidden}
+.hero img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:-2;transform:scale(1.04);animation:drift 30s ease-in-out infinite alternate}
+.hero::after{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,#13091200 30%,#130912cc 70%,var(--night) 100%)}
+.hero .copy{padding-block:40px 34px;max-width:720px;display:grid;gap:16px}
+.hero h1{font-size:clamp(40px,7vw,78px);text-shadow:0 2px 24px #000a}
+.hero h1 em{font-style:normal;color:var(--lantern)}
+.hero p.lead{font-size:clamp(18px,2.1vw,21px);max-width:58ch;color:#fff3e2}
+@keyframes drift{to{transform:scale(1.1) translate(-1.5%,-1%)}}
+
+.play{display:inline-flex;align-items:center;gap:10px;appearance:none;border:0;background:var(--lantern);color:var(--night);font:700 16px var(--body);padding:12px 18px 12px 14px;border-radius:999px;cursor:pointer;min-height:48px;box-shadow:0 0 0 6px #ffd27a22,0 10px 30px #ff8a2b33;width:max-content;max-width:100%}
+.play .dot{width:22px;height:22px;border-radius:50%;background:var(--night);display:grid;place-items:center}
+.play .dot::before{content:"";border-left:8px solid var(--lantern);border-top:5px solid transparent;border-bottom:5px solid transparent;margin-left:2px}
+.play.on .dot::before{border:0;width:8px;height:8px;background:var(--lantern);margin:0}
+.play.quiet{background:#ffffff12;color:var(--paper);box-shadow:none;border:1px solid var(--line)}
+.play.quiet .dot{background:var(--lantern)}.play.quiet .dot::before{border-left-color:var(--night)}
+
+/* trail: a dashed lantern line down the left with numbered stations */
+.trail{position:relative;display:grid;gap:clamp(56px,8vw,96px);padding-block:30px 80px}
+.trail::before{content:"";position:absolute;left:calc(max(16px,(100vw - 1080px)/2) + 15px);top:0;bottom:0;border-left:3px dashed var(--line)}
+.station{position:relative;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:clamp(20px,4vw,48px);align-items:center;padding-left:52px}
+.station.flip .scene{order:2}
+.station .num{position:absolute;left:0;top:4px;width:34px;height:34px;border-radius:50%;background:var(--night);border:3px solid var(--lantern);display:grid;place-items:center;font:12px var(--pixel);color:var(--lantern);box-shadow:0 0 18px #ffd27a66}
+.scene{position:relative;border-radius:18px;overflow:hidden;box-shadow:0 20px 50px #000a,0 0 0 1px #ffffff14;aspect-ratio:4/3;background:var(--crimson)}
+.scene img{width:100%;height:100%;object-fit:cover;transition:transform 1.2s cubic-bezier(.2,.7,.2,1)}
+.scene:hover img{transform:scale(1.04)}
+.text{display:grid;gap:14px;min-width:0}
+.text h2{font-size:clamp(30px,4vw,44px)}
+.text p{color:#f3dcc4;max-width:60ch}
+.text strong{color:var(--paper)}
+
+/* inventory chips */
+.inv{display:flex;flex-wrap:wrap;gap:8px}
+.inv span{border:1px solid var(--line);background:#ffffff0a;padding:6px 12px;border-radius:10px;font-size:15px}
+.inv span b{color:var(--lantern);font-weight:700}
+.need{border-left:4px solid var(--ember);padding:12px 16px;background:#ff8a2b14;border-radius:0 12px 12px 0}
+
+/* checklist */
+.check{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.check label{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border-radius:12px;background:#ffffff08;border:1px solid #ffffff12;cursor:pointer;min-height:48px}
+.check input{width:22px;height:22px;accent-color:var(--lantern);margin:2px 0 0;flex:none}
+.check input:checked + span{color:var(--ok)}
+.check small{display:block;color:var(--ash);font-size:15px}
+.meter{display:flex;align-items:center;gap:12px}
+.meter i{flex:1;height:10px;border-radius:99px;background:#ffffff14;overflow:hidden}
+.meter i b{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--ember),var(--lantern));transition:width .4s}
+.ready{font-family:var(--display);font-size:22px;color:var(--lantern);min-height:1.3em}
+.warn{color:#ffb4a0;font-size:16px}
+
+/* portal table + converter */
+.ledger{display:grid;gap:22px}
+.ledger h2{font-size:clamp(30px,4vw,44px)}
+.tbl{overflow-x:auto;border-radius:14px;border:1px solid var(--line)}
+table{border-collapse:collapse;width:100%;min-width:640px;font-size:15px}
+th,td{padding:11px 14px;text-align:left;border-bottom:1px solid #ffffff10;vertical-align:top}
+th{font:12px var(--pixel);letter-spacing:.06em;color:var(--lantern);background:#ffffff08}
+td.n{font-variant-numeric:tabular-nums;white-space:nowrap}
+.tag{display:inline-block;font:11px var(--pixel);padding:3px 8px;border-radius:6px;white-space:nowrap}
+.tag.lit{background:#b48cff33;color:#dccbff}.tag.unlit{background:#ffffff14;color:var(--ash)}
+.tag.yes{background:#9be3a633;color:var(--ok)}.tag.maybe{background:#ffd27a26;color:var(--lantern)}.tag.plan{background:#ff8a2b26;color:#ffc08a}
+.conv{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:14px}
+.box{background:#ffffff08;border:1px solid var(--line);border-radius:16px;padding:18px;display:grid;gap:12px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:end}
+.row label{display:grid;gap:4px;font-size:14px;color:var(--ash);flex:1;min-width:110px}
+.row input{width:100%;font:18px var(--pixel);background:var(--night);color:var(--paper);border:1px solid #ffffff2a;border-radius:10px;padding:10px 12px;min-height:46px}
+.out{font:20px var(--pixel);color:var(--lantern);font-variant-numeric:tabular-nums}
+.small{font-size:15px;color:var(--ash)}
+
+/* big-moment cards */
+.moments{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:18px}
+.card{background:linear-gradient(180deg,#ffffff0a,#ffffff04);border:1px solid #ffffff14;border-radius:18px;overflow:hidden;display:grid;grid-template-rows:auto 1fr}
+.card img{aspect-ratio:16/10;object-fit:cover;width:100%}
+.card .in{padding:18px;display:grid;gap:10px;align-content:start}
+.card h3{font-size:26px}
+.card p{color:#f3dcc4;font-size:17px}
+
+.steps{counter-reset:s;list-style:none;padding:0;margin:0;display:grid;gap:10px}
+.steps li{counter-increment:s;display:grid;grid-template-columns:38px 1fr;gap:12px;align-items:start}
+.steps li::before{content:counter(s);width:34px;height:34px;border-radius:10px;background:var(--lantern);color:var(--night);font:14px var(--pixel);display:grid;place-items:center}
+
+.road{position:relative;isolation:isolate;border-radius:22px;overflow:hidden;min-height:420px;display:grid;align-items:end}
+.road img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:-2}
+.road::after{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,#0000 20%,#130912ee 85%)}
+.road .in{padding:28px;display:grid;gap:14px;max-width:700px}
+.road h2{font-size:clamp(32px,5vw,52px)}
+.big{display:flex;gap:18px;flex-wrap:wrap;align-items:baseline}
+.big b{font:clamp(40px,7vw,64px)/1 var(--display);color:var(--lantern);font-weight:400}
+.big s{font:clamp(26px,4vw,36px)/1 var(--display);color:var(--ash)}
+
+footer{padding-block:40px 60px;color:var(--ash);font-size:15px;display:grid;gap:8px;border-top:1px solid #ffffff10}
+
+@media (max-width:760px){
+  body{font-size:17px}
+  .station{grid-template-columns:1fr;padding-left:44px}
+  .station.flip .scene{order:0}
+  .trail::before{left:calc(16px + 15px)}
+  .station .num{left:0}
+  .hero{min-height:560px}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}html{scroll-behavior:auto}}
+</style>
+
+<header class="bar wrap">
+  <b>Lantern Guide</b>
+  <button class="chip" id="music" type="button" aria-pressed="false">Music off</button>
+</header>
+
+<section class="hero">
+  <img src="art/hero.webp" alt="Your gold-crowned obsidian gate glowing violet at the edge of a crimson forest, with a path of lanterns leading in">
+  <div class="copy wrap">
+    <p class="pix">For Gordon · Gordtopia · Bedrock</p>
+    <h1>The Nether, <em>one lantern</em> at a time</h1>
+    <p class="lead">You have felt lost, scared and confused there. That is normal, and it is fixable. This guide is built from your own trips, your own gates and your own chests.</p>
+    <button class="play" type="button" data-say="audio/v1-welcome.mp3"><span class="dot"></span>Hear it from Lantern</button>
+  </div>
+</section>
+
+<main class="trail">
+
+  <article class="station wrap" id="ready">
+    <span class="num">1</span>
+    <figure class="scene" style="margin:0"><img src="art/pack.webp" alt="Gold boots, a shield, cobblestone, flint and steel and food laid out on a table" loading="lazy"></figure>
+    <div class="text">
+      <p class="pix">Your chests already say yes</p>
+      <h2>You are more ready than you feel</h2>
+      <p>Most players walk into the Nether with far less. Here is what your storage wall already holds:</p>
+      <div class="inv">
+        <span><b>Diamond armor</b> Protection IV</span><span><b>Sword</b> Sharpness V</span>
+        <span><b>Fire resistance</b> potions</span><span><b>Golden apples</b></span>
+        <span><b>175</b> ender pearls</span><span><b>393</b> gold blocks</span>
+      </div>
+      <p class="need"><strong>The one piece missing is gold.</strong> Piglins attack anyone who walks in without at least one piece of gold armor. Break one gold block into 9 ingots, then craft gold boots from 4 of them. Wear them in the Nether instead of your diamond boots.</p>
+      <button class="play quiet" type="button" data-say="audio/v2-pack.mp3"><span class="dot"></span>Hear the packing tip</button>
+    </div>
+  </article>
+
+  <article class="station flip wrap" id="pack">
+    <span class="num">2</span>
+    <figure class="scene" style="margin:0"><img src="art/stepthrough.webp" alt="Your gold-crowned gate on a grassy hill on a calm starry evening, torches lit beside it" loading="lazy"></figure>
+    <div class="text">
+      <p class="pix">Before you step through</p>
+      <h2>Six things, then go</h2>
+      <ul class="check" id="check">
+        <li><label><input type="checkbox" id="c1"><span>Gold boots on<small>Piglins leave you alone.</small></span></label></li>
+        <li><label><input type="checkbox" id="c2"><span>Fire resistance and golden apples in your hotbar<small>Your lava insurance.</small></span></label></li>
+        <li><label><input type="checkbox" id="c3"><span>A stack of cobblestone<small>For bridges, steps and walls. Ghasts can't break it.</small></span></label></li>
+        <li><label><input type="checkbox" id="c4"><span>Flint and steel<small>Relights a portal if a ghast blows it out.</small></span></label></li>
+        <li><label><input type="checkbox" id="c5"><span>A stack of torches<small>Your breadcrumbs home.</small></span></label></li>
+        <li><label><input type="checkbox" id="c6"><span>Screenshot your Position before you leave<small>The number that gets you home.</small></span></label></li>
+      </ul>
+      <div class="meter" aria-live="polite"><i><b id="bar"></b></i><span class="pix" id="count">0 of 6</span></div>
+      <p class="ready" id="ready-msg"></p>
+      <p class="warn">Never sleep in a bed there. Beds explode in the Nether.</p>
+    </div>
+  </article>
+
+  <section class="ledger wrap" id="portals">
+    <p class="pix">Your gates, read from your own screenshots</p>
+    <h2>Where your portals really go</h2>
+    <p class="text" style="display:block"><span style="color:#f3dcc4">The Nether is the overworld folded small. Every 8 blocks you walk out here is 1 block in there. Divide your overworld X and Z by 8 and you have your Nether spot. Your height (Y) does not change.</span></p>
+    <div class="tbl">
+      <table>
+        <thead><tr><th>Gate</th><th>Overworld X, Z</th><th>Nether X, Z</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td>Home under the bell<br><span class="small">your hub, not built yet</span></td><td class="n">259, 2466</td><td class="n">32, 308</td><td><span class="tag plan">Plan</span></td></tr>
+          <tr><td>Gold-crowned gate 132</td><td class="n">14107, 1922</td><td class="n">1692, 165</td><td><span class="tag lit">Lit</span> <span class="tag yes">You walked it</span></td></tr>
+          <tr><td>Gold-crowned gate 120</td><td class="n">13547, 1322</td><td class="n">1692, 165</td><td><span class="tag unlit">Unlit</span> <span class="tag yes">Shares 132's portal</span></td></tr>
+          <tr><td>Blossomgate</td><td class="n">-6251, 923</td><td class="n">-782, 115</td><td><span class="tag lit">Lit</span> <span class="tag maybe">Not visited</span></td></tr>
+          <tr><td>Cave portal, Oct 3</td><td class="n">-7627, 243 ?</td><td class="n">-957, 28</td><td><span class="tag lit">Lit</span> <span class="tag maybe">Pair likely</span></td></tr>
+          <tr><td>Netherrack portal, Sept 1</td><td class="n">9937, 1580 ?</td><td class="n">1251, 213</td><td><span class="tag lit">Lit</span> <span class="tag maybe">Pair likely</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="conv">
+      <div class="box">
+        <p class="pix">Overworld to Nether</p>
+        <div class="row"><label for="ox">X<input id="ox" inputmode="numeric" value="259"></label><label for="oz">Z<input id="oz" inputmode="numeric" value="2466"></label></div>
+        <p>Nether spot: <span class="out" id="nout">32, 308</span></p>
+        <p class="small">Starts at your bell. Type any spot from your Position.</p>
+      </div>
+      <div class="box">
+        <p class="pix">Nether to Overworld</p>
+        <div class="row"><label for="nx">X<input id="nx" inputmode="numeric" value="1692"></label><label for="nz">Z<input id="nz" inputmode="numeric" value="165"></label></div>
+        <p>Overworld spot: <span class="out" id="oout">13536, 1320</span></p>
+        <p class="small">Starts at the portal you used on September 5.</p>
+      </div>
+    </div>
+  </section>
+
+  <article class="station wrap" id="surprise">
+    <span class="num">3</span>
+    <figure class="scene" style="margin:0"><img src="art/compass.webp" alt="A glowing compass pointing across a lava cavern toward a distant violet portal" loading="lazy"></figure>
+    <div class="text">
+      <p class="pix">The surprise that is not your fault</p>
+      <h2>Why you came out somewhere else</h2>
+      <p>On September 5 you went through your lit gold-crowned gate 132, gathered crimson stems, and came back out near gate 120, 563 blocks from where you started. <strong>You did nothing wrong.</strong> When you step through, the game looks for any portal already within about 128 blocks of the matching Nether spot and sends you there. Both of your gates land on the same Nether portal.</p>
+      <p>A plain compass spins in the Nether, so your real compass there is your <strong>Position</strong> readout. You already read it on every trip. That habit is what gets you home.</p>
+    </div>
+  </article>
+
+  <article class="station flip wrap" id="lost">
+    <span class="num">4</span>
+    <figure class="scene" style="margin:0"><img src="art/road.webp" alt="A lantern-lit stone road through dark netherrack ending at a glowing portal" loading="lazy" style="object-position:50% 60%"></figure>
+    <div class="text">
+      <p class="pix">When you feel lost</p>
+      <h2>Stop, read, walk</h2>
+      <ol class="steps">
+        <li><span><strong>Stop and wall in.</strong> Place cobblestone around you, two high. Nothing can reach you. Breathe.</span></li>
+        <li><span><strong>Read your Position.</strong> Compare it to your portal's Nether spot in the table above.</span></li>
+        <li><span><strong>Walk the difference.</strong> If your X is bigger than the portal's, walk toward smaller X. Same for Z. Small numbers in the Nether are short walks.</span></li>
+        <li><span><strong>Follow your torches.</strong> Torches on your right going out are on your left coming home.</span></li>
+      </ol>
+      <button class="play quiet" type="button" data-say="audio/v3-lost.mp3"><span class="dot"></span>Hear the steady version</button>
+    </div>
+  </article>
+
+  <section class="wrap" id="moments" style="display:grid;gap:22px">
+    <p class="pix">If something big happens</p>
+    <h2 style="font-size:clamp(30px,4vw,44px)">Three big moments, three calm answers</h2>
+    <div class="moments">
+      <article class="card"><img src="art/ghast.webp" alt="A sleepy ghast drifting far away over a lava sea, with a raised shield in front" loading="lazy">
+        <div class="in"><h3>A ghast</h3><p>Loud, but slow. Raise your shield, or step behind a cobblestone block. Ghasts drift over open lava seas and are rare in the crimson forest you know. If one breaks your portal, flint and steel lights it again.</p>
+        <button class="play quiet" type="button" data-say="audio/v4-ghast.mp3" id="ghastBtn"><span class="dot"></span>Hear it</button></div></article>
+      <article class="card"><img src="art/bridge.webp" alt="A cobblestone bridge with lanterns crossing a lava sea" loading="lazy">
+        <div class="in"><h3>Lava</h3><p>Drink fire resistance before you get close. Then lay cobblestone one block at a time and walk slowly. Your potion lasts minutes; your bridge lasts forever.</p>
+        <button class="play quiet" type="button" data-say="audio/v5-lava.mp3"><span class="dot"></span>Hear it</button></div></article>
+      <article class="card"><img src="art/piglin.webp" alt="A calm piglin in the crimson forest holding a gold ingot beside a pair of gold boots" loading="lazy">
+        <div class="in"><h3>Piglins and hoglins</h3><p>With gold boots on, piglins are calm. Don't open chests or break gold near them. Hoglins, the big pink boars of the crimson forest, ignore gold: give them room, or stand two blocks up and let them wander off.</p></div></article>
+    </div>
+  </section>
+
+  <section class="wrap" id="road">
+    <div class="road">
+      <img src="art/road.webp" alt="" loading="lazy">
+      <div class="in">
+        <p class="pix">Your road home</p>
+        <h2>The Nether is the shortcut you already planned</h2>
+        <div class="big"><b>11 min</b><s>88 min</s></div>
+        <p style="color:#fff3e2">From your bell to the four edges of Gordtopia is 29,686 blocks on foot. Through the Nether it is 3,711. Your Nether Spine plan says light one block every twelve. Start small: build the home portal under the bell at Nether 32, 308. Every trip after that begins and ends at home.</p>
+        <button class="play" type="button" data-say="audio/v6-road.mp3"><span class="dot"></span>Hear the send-off</button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="wrap">
+  <p>Made for Gordon from his Gordtopia records: gate coordinates from his screenshots, inventory from his storage wall, the Spine numbers from his Works Board. Pairs marked "likely" are not yet confirmed by a walk.</p>
+  <p>Scenes by Higgsfield. Lantern's voice and the music by ElevenLabs. Built by Darby.</p>
+</footer>
+
+<audio id="theme" src="audio/lantern-theme.mp3" loop preload="none"></audio>
+<script>
+(function(){
+  var $=function(s){return document.querySelector(s)};
+  /* voice coach: one line at a time; music ducks while Lantern speaks */
+  var voice=new Audio(), cur=null, theme=$('#theme');
+  function stopVoice(){voice.pause();if(cur){cur.classList.remove('on');cur=null}duck(false)}
+  function duck(on){if(!theme.paused)theme.volume=on?0.12:0.4}
+  document.querySelectorAll('[data-say]').forEach(function(b){
+    b.addEventListener('click',function(){
+      if(cur===b){stopVoice();return}
+      stopVoice();voice.src=b.dataset.say;cur=b;b.classList.add('on');duck(true);
+      voice.play().catch(function(){stopVoice()});
+    });
+  });
+  voice.addEventListener('ended',stopVoice);
+  voice.addEventListener('error',function(){if(cur){cur.textContent='Voice coming soon';}stopVoice()});
+  /* music is opt-in */
+  var mb=$('#music');
+  mb.addEventListener('click',function(){
+    if(theme.paused){theme.volume=0.4;theme.play().then(function(){mb.textContent='Music on';mb.setAttribute('aria-pressed','true')}).catch(function(){})}
+    else{theme.pause();mb.textContent='Music off';mb.setAttribute('aria-pressed','false')}
+  });
+  /* checklist, remembered on this device */
+  var boxes=[].slice.call(document.querySelectorAll('#check input')),KEY='lantern-check';
+  try{var saved=JSON.parse(localStorage.getItem(KEY)||'[]');boxes.forEach(function(b,i){b.checked=!!saved[i]})}catch(e){}
+  function paint(){
+    var n=boxes.filter(function(b){return b.checked}).length;
+    $('#bar').style.width=(n/6*100)+'%';$('#count').textContent=n+' of 6';
+    $('#ready-msg').textContent=n===6?'Ready. Step through. You have got this.':n>=3?'Halfway packed. Nice.':'';
+    try{localStorage.setItem(KEY,JSON.stringify(boxes.map(function(b){return b.checked})))}catch(e){}
+  }
+  boxes.forEach(function(b){b.addEventListener('change',paint)});paint();
+  /* converter: floor division matches the game for negative coordinates too */
+  function num(v){var n=parseInt(String(v).replace(/[^\d-]/g,''),10);return isFinite(n)?n:null}
+  function conv(){
+    var x=num($('#ox').value),z=num($('#oz').value);
+    $('#nout').textContent=(x===null||z===null)?'type X and Z':Math.floor(x/8)+', '+Math.floor(z/8);
+    var a=num($('#nx').value),c=num($('#nz').value);
+    $('#oout').textContent=(a===null||c===null)?'type X and Z':(a*8)+', '+(c*8);
+  }
+  ['#ox','#oz','#nx','#nz'].forEach(function(s){$(s).addEventListener('input',conv)});conv();
+  document.addEventListener('visibilitychange',function(){if(document.hidden){stopVoice();theme.pause();mb.textContent='Music off';mb.setAttribute('aria-pressed','false')}});
+})();
+</script>
