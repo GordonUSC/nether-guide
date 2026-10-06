@@ -51,9 +51,13 @@ button[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
 .lost{border:2px solid var(--route);background:#fffdf7;padding:18px;display:grid;gap:12px}
 .lost h2{font-size:28px;color:var(--route)}
 .pair{display:flex;gap:10px;flex-wrap:wrap}
-.pair label{display:grid;gap:4px;font:700 13px var(--sans);flex:1 1 110px}
+.pair label{display:grid;align-content:start;gap:4px;font:700 13px var(--sans);flex:1 1 110px}
 input,select{font:700 22px var(--sans);font-variant-numeric:tabular-nums;width:100%;padding:8px 10px;border:2px solid var(--ink);border-radius:0;background:#fff;color:var(--ink);min-height:48px}
 select{font-size:16px}
+input[aria-invalid="true"]{border-color:var(--route)}
+.coordinate-error{font:400 13px/1.4 var(--sans);color:var(--route)}
+.audio-status{flex-basis:100%;font-size:13px;color:var(--soft)}
+[hidden]{display:none!important}
 .steps{display:grid;gap:8px;margin:0;padding:0;list-style:none}
 .steps li{display:grid;grid-template-columns:34px 1fr;gap:10px;align-items:start;font-size:18px}
 .arrow{width:34px;height:34px;border:2px solid var(--ink);display:grid;place-items:center;font:800 18px var(--sans)}
@@ -108,8 +112,13 @@ footer{border-top:2px solid var(--ink);padding-block:18px 40px;font-size:13px;co
 <header class="card top">
   <div class="name"><span class="tri" aria-hidden="true"></span> Lantern field card, for Gordon's Gordtopia Nether</div>
   <div class="tools"><a class="btn" href="lantern-pocket-card.pdf">Print the pocket card</a><button type="button" id="music" aria-pressed="false">Music off</button><button type="button" class="say" data-say="audio/v1-welcome.mp3">Hear Lantern</button></div>
+  <p class="audio-status" id="audio-status" role="status"></p>
 </header>
 
+<noscript>
+  <style>.lost,.map,.conv,.say,#music,.meter,#count,#ready-msg{display:none!important}</style>
+  <p class="card" style="padding-block:18px">The route finder, map, coordinate converter and audio need JavaScript. <a href="#gates">Read the portal coordinates and status</a>, or use the pocket card above. The written guide remains available below.</p>
+</noscript>
 <main class="card">
 <section class="lead" aria-labelledby="t1">
   <div style="display:grid;gap:14px">
@@ -136,7 +145,7 @@ footer{border-top:2px solid var(--ink);padding-block:18px 40px;font-size:13px;co
     <div class="tools route-tools"><button type="button" id="save-route" disabled>Save this route</button><button type="button" id="print-route" disabled>Print this route</button></div>
     <p class="small" id="route-status" role="status">Enter your current position. Saved on this device only.</p>
     <p class="route-print" id="route-print"></p>
-    <div class="home" id="home" role="status"><b>You're home.</b><p>Build your portal here, then test it before your next trip.</p><button type="button" class="say" data-say="audio/v7-home.mp3">Hear Lantern say it</button></div>
+    <div class="home" id="home" role="status"><b>You're home.</b><p id="home-position"></p><p>Build your portal here, then test it before your next trip.</p><button type="button" class="say" data-say="audio/v7-home.mp3">Hear Lantern say it</button></div>
     <p class="small">First, make a sheltered spot with cobblestone before you check your route. Then read, then walk. Watch for lava and drops: these directions do not account for terrain.</p>
   </div>
 </section>
@@ -290,6 +299,25 @@ footer{border-top:2px solid var(--ink);padding-block:18px 40px;font-size:13px;co
 
   /* the way home */
   function num(v){var text=String(v).trim();if(!/^[+-]?(\d+\.?\d*|\.\d+)$/.test(text))return null;var n=Math.floor(Number(text));return Number.isSafeInteger(n)&&Math.abs(n)<=30000000?n:null}
+  /* Field feedback uses the same parser as routing and conversion. */
+  function coordinateValue(id){
+    var input=$(id),value=num(input.value),error=$(id+'-error');
+    var touched=input.dataset.touched==='true';
+    var message='';
+    if(value===null&&touched){
+      message=!input.value.trim()?'Enter this coordinate.':/^[+-]?(\d+\.?\d*|\.\d+)$/.test(input.value.trim())?'Use a block coordinate from -30,000,000 to 30,000,000.':'Enter a number, such as -32 or +32.5.';
+    }
+    input.setAttribute('aria-invalid',message?'true':'false');
+    error.textContent=message;error.hidden=!message;
+    return value;
+  }
+  ['hx','hz','ox','oz','nx','nz'].forEach(function(id){
+    var input=$('#'+id),error=document.createElement('span');
+    error.id=id+'-error';error.className='coordinate-error';error.hidden=true;
+    input.setAttribute('aria-describedby',error.id);input.after(error);
+    input.addEventListener('input',function(){input.dataset.touched='true';coordinateValue('#'+id)});
+    input.addEventListener('blur',function(){input.dataset.touched='true';coordinateValue('#'+id)});
+  });
   var dest=$('#dest');
   dest.innerHTML='<option value="near">Nearest lit portal</option>'+G.filter(function(g){return g.k!=='g120'}).map(function(g){return '<option value="'+g.k+'">'+g.name+(g.plan?' (not built yet)':g.likely?' (pair unconfirmed)':g.k==='blos'?' (not visited)':'')+'</option>'}).join('');
   var played=false,routeReady=false,ROUTE_KEY='lantern-route-v1';
@@ -308,7 +336,7 @@ footer{border-top:2px solid var(--ink);padding-block:18px 40px;font-size:13px;co
   function routeChanged(){way();$('#route-status').textContent=routeReady?'Route changed. Save again to keep these directions on this device.':'Enter your X and Z from your Position.';}
 
   function way(){
-    var x=num($('#hx').value),z=num($('#hz').value),st=$('#steps'),eta=$('#eta'),home=$('#home');
+    var x=coordinateValue('#hx'),z=coordinateValue('#hz'),st=$('#steps'),eta=$('#eta'),home=$('#home');
     routeReady=x!==null&&z!==null;$('#save-route').disabled=!routeReady;$('#print-route').disabled=!routeReady;
     if(!routeReady){st.innerHTML='<li><span class="arrow">?</span><span>Type your X and Z.</span></li>';eta.textContent='';$('#route-evidence').textContent='';$('#route-print').textContent='';home.classList.remove('show');route.setAttribute('points','');me.setAttribute('cx',-20);me.setAttribute('cy',-20);return}
     var cand=G.filter(function(g){return g.k!=='g120'}),t;
@@ -328,7 +356,8 @@ footer{border-top:2px solid var(--ink);padding-block:18px 40px;font-size:13px;co
     me.setAttribute('cx',px);me.setAttribute('cy',py);
     route.setAttribute('points',px+','+py+' '+sx(t.n[0])+','+py+' '+sx(t.n[0])+','+nz(t.n[1]));
     /* the surprise: standing on the home spot */
-    var atHome=Math.abs(x-32)+Math.abs(z-308)<=16;
+    var homeDistance=Math.abs(x-32)+Math.abs(z-308),atHome=homeDistance<=16;
+    $('#home-position').textContent=homeDistance===0?'Your block coordinates match the planned home spot at X 32, Z 308. Check height and terrain.':'Near the planned home spot: '+homeDistance+' X/Z blocks remain to block X 32, Z 308. Follow the remaining directions and check height and terrain.';
     home.classList.toggle('show',atHome);
     if(atHome&&!played){played=true;var b=home.querySelector('.say');if(b&&soundOk)b.click()}
     if(!atHome)played=false;
@@ -337,17 +366,30 @@ footer{border-top:2px solid var(--ink);padding-block:18px 40px;font-size:13px;co
   ['#hx','#hz'].forEach(function(s){$(s).addEventListener('input',routeChanged)});dest.addEventListener('change',routeChanged);
 
   /* voice coach: one line at a time; music ducks while Lantern speaks */
-  var voice=new Audio(),cur=null,theme=$('#theme'),soundOk=false;
-  function stopVoice(){voice.pause();if(cur){cur.classList.remove('on');cur=null}duck(false)}
+  var voice=new Audio(),cur=null,theme=$('#theme'),soundOk=false,voiceRequest=0,musicRequest=0;
+  var audioStatus=$('#audio-status');
+  document.querySelectorAll('[data-say]').forEach(function(b){b.setAttribute('aria-pressed','false')});
+  function stopVoice(){voiceRequest++;voice.pause();if(cur){cur.classList.remove('on');cur.setAttribute('aria-pressed','false');cur.removeAttribute('aria-busy');cur=null}duck(false)}
   function duck(on){if(!theme.paused)theme.volume=on?0.12:0.4}
   document.addEventListener('click',function(e){var b=e.target.closest('[data-say]');if(!b)return;soundOk=true;
-    if(cur===b){stopVoice();return}stopVoice();voice.src=b.dataset.say;cur=b;b.classList.add('on');duck(true);voice.play().catch(function(){stopVoice()})});
-  voice.addEventListener('ended',stopVoice);
-  voice.addEventListener('error',function(){stopVoice()});
+    if(cur===b){stopVoice();audioStatus.textContent='Lantern paused.';return}
+    stopVoice();voice.src=b.dataset.say;cur=b;var request=voiceRequest;
+    b.classList.add('on');b.setAttribute('aria-pressed','true');b.setAttribute('aria-busy','true');
+    audioStatus.textContent='Loading Lantern…';duck(true);
+    voice.play().then(function(){if(request!==voiceRequest)return;b.removeAttribute('aria-busy');audioStatus.textContent='Lantern is speaking. Press the same button to pause.';})
+      .catch(function(){if(request!==voiceRequest)return;stopVoice();audioStatus.textContent='This recording could not play. Try the button again; the written guide is still available.';});
+  });
+  voice.addEventListener('ended',function(){if(!cur)return;stopVoice();audioStatus.textContent='Lantern finished.';});
+  voice.addEventListener('error',function(){if(!cur)return;stopVoice();audioStatus.textContent='This recording could not play. Try the button again; the written guide is still available.';});
   var mb=$('#music');
-  mb.addEventListener('click',function(){soundOk=true;
-    if(theme.paused){theme.volume=0.4;theme.play().then(function(){mb.textContent='Music on';mb.setAttribute('aria-pressed','true')}).catch(function(){})}
-    else{theme.pause();mb.textContent='Music off';mb.setAttribute('aria-pressed','false')}});
+  mb.addEventListener('click',function(){
+    soundOk=true;
+    var request=++musicRequest;
+    if(mb.getAttribute('aria-pressed')!=='true'){
+      mb.setAttribute('aria-pressed','true');mb.textContent='Music on';theme.volume=cur?0.12:0.4;
+      theme.play().catch(function(){if(request!==musicRequest)return;theme.pause();mb.textContent='Music off';mb.setAttribute('aria-pressed','false');audioStatus.textContent='Music could not play. Try Music off again.';});
+    }else{theme.pause();mb.textContent='Music off';mb.setAttribute('aria-pressed','false')}
+  });
   /* checklist, remembered on this device */
   var boxes=[].slice.call(document.querySelectorAll('#check input')),KEY='lantern-check';
   try{var saved=JSON.parse(localStorage.getItem(KEY)||'[]');boxes.forEach(function(b,i){b.checked=!!saved[i]})}catch(e){}
@@ -356,10 +398,10 @@ footer{border-top:2px solid var(--ink);padding-block:18px 40px;font-size:13px;co
     try{localStorage.setItem(KEY,JSON.stringify(boxes.map(function(b){return b.checked})))}catch(e){}}
   boxes.forEach(function(b){b.addEventListener('change',paint)});paint();
   /* converter: floor division matches the game for negative coordinates too */
-  function conv(){var x=num($('#ox').value),z=num($('#oz').value);$('#nout').textContent=(x===null||z===null)?'type X and Z':Math.floor(x/8)+', '+Math.floor(z/8);
-    var a=num($('#nx').value),c=num($('#nz').value);$('#oout').textContent=(a===null||c===null)?'type X and Z':(a*8)+', '+(c*8)}
+  function conv(){var x=coordinateValue('#ox'),z=coordinateValue('#oz');$('#nout').textContent=(x===null||z===null)?'type X and Z':Math.floor(x/8)+', '+Math.floor(z/8);
+    var a=coordinateValue('#nx'),c=coordinateValue('#nz');$('#oout').textContent=(a===null||c===null)?'type X and Z':(a*8)+', '+(c*8)}
   ['#ox','#oz','#nx','#nz'].forEach(function(s){$(s).addEventListener('input',conv)});conv();way();
-  document.addEventListener('visibilitychange',function(){if(document.hidden){stopVoice();theme.pause();mb.textContent='Music off';mb.setAttribute('aria-pressed','false')}});
+  document.addEventListener('visibilitychange',function(){if(document.hidden){var wasPlaying=cur||mb.getAttribute('aria-pressed')==='true';stopVoice();musicRequest++;theme.pause();if(wasPlaying)audioStatus.textContent='Audio paused while this page was hidden.';mb.textContent='Music off';mb.setAttribute('aria-pressed','false')}});
 })();
 </script>
 </html>
