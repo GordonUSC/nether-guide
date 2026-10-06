@@ -9,6 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Karla:wght@400;600;800&family=Archivo+Narrow:wght@600;700&display=swap" rel="stylesheet">
 <!-- STYLE: Orienteering field card (Swiss topographic map tradition with Otl Aicher pictograms; Twenty Design Systems #3 Aicher). Light map paper, a real plotted map of his portals (Overworld band over Nether band, linked 8 to 1), control-point circles for the steps, magenta route line. FORBIDS: dark crimson hero, AI landscape scenes, big serif headline, card grid, typewriter labels | WHY: he feels lost, scared and confused there; a map you can read in five seconds is the calm, and the first useful action is "the way home from where I am" | ALT: 2.5D voxel cutaway of the portal network (rejected: the spatial cost is not earned for a second-screen lookup). -->
+<script>document.documentElement.classList.add('js')</script>
 <style>
 /* Layout: one folded field card. The map and the route finder first (the thing he needs when lost), then the course: pack, why gates surprise you, what to do when lost, three big moments, the road home. */
 :root{
@@ -95,6 +96,7 @@ footer{border-top:2px solid var(--ink);padding-block:18px 40px;font-size:13px;co
 @media (max-width:820px){.lead{grid-template-columns:1fr}.lost{order:-1}.leg{grid-template-columns:1fr;gap:10px}.ctrl{width:44px;height:44px;font-size:19px}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}html{scroll-behavior:auto}}
 .route-print{display:none;white-space:pre-line}
+.route-tools{display:none}.js .route-tools{display:flex}
 @media print{
   body{background:#fff;color:#000}.tools,.say,audio{display:none!important}
   .route-print{display:block;border:2px solid #000;padding:12px}
@@ -132,9 +134,9 @@ footer{border-top:2px solid var(--ink);padding-block:18px 40px;font-size:13px;co
     <p class="small" id="eta"></p>
     <p class="small" id="route-evidence"></p>
     <div class="tools route-tools"><button type="button" id="save-route" disabled>Save this route</button><button type="button" id="print-route" disabled>Print this route</button></div>
-    <p class="small" id="route-status" role="status">Enter your current position. Saved routes stay on this device; they do not track you in the game.</p>
+    <p class="small" id="route-status" role="status">Enter your current position. Saved on this device only.</p>
     <p class="route-print" id="route-print"></p>
-    <div class="home" id="home" role="status"><b>You reached the planned home coordinates.</b><p>The home portal is recorded as not built yet. Check the height and terrain, then build and test it before relying on it for a trip home.</p><button type="button" class="say" data-say="audio/v7-home.mp3">Hear the original home message</button></div>
+    <div class="home" id="home" role="status"><b>You're home.</b><p>Build your portal here, then test it before your next trip.</p><button type="button" class="say" data-say="audio/v7-home.mp3">Hear Lantern say it</button></div>
     <p class="small">First, make a sheltered spot with cobblestone before you check your route. Then read, then walk. Watch for lava and drops: these directions do not account for terrain.</p>
   </div>
 </section>
@@ -287,28 +289,28 @@ footer{border-top:2px solid var(--ink);padding-block:18px 40px;font-size:13px;co
   var me=el('circle',{cx:-20,cy:-20,r:8,fill:'#c0287a',stroke:'#fff','stroke-width':2});
 
   /* the way home */
-  function num(v){var text=String(v).trim();if(!/^-?\d+$/.test(text))return null;var n=Number(text);return Number.isSafeInteger(n)&&Math.abs(n)<=30000000?n:null}
+  function num(v){var text=String(v).trim();if(!/^[+-]?(\d+\.?\d*|\.\d+)$/.test(text))return null;var n=Math.floor(Number(text));return Number.isSafeInteger(n)&&Math.abs(n)<=30000000?n:null}
   var dest=$('#dest');
   dest.innerHTML='<option value="near">Nearest lit portal</option>'+G.filter(function(g){return g.k!=='g120'}).map(function(g){return '<option value="'+g.k+'">'+g.name+(g.plan?' (not built yet)':g.likely?' (pair unconfirmed)':g.k==='blos'?' (not visited)':'')+'</option>'}).join('');
-  var routeReady=false,ROUTE_KEY='lantern-route-v1';
+  var played=false,routeReady=false,ROUTE_KEY='lantern-route-v1';
   try{var last=JSON.parse(localStorage.getItem(ROUTE_KEY)||'null');
     if(last&&num(last.x)!==null&&num(last.z)!==null&&(last.dest==='near'||G.some(function(g){return g.k===last.dest&&g.k!=='g120'}))){
       $('#hx').value=last.x;$('#hz').value=last.z;dest.value=last.dest;
       $('#route-status').textContent='Saved route restored. Recheck your current Position and portal status before walking.';
     }
   }catch(e){}
-  function routeText(){return 'Gordtopia Nether route — saved directions, not live navigation.\nFrom X '+$('#hx').value+', Z '+$('#hz').value+'.\n'+$('#steps').textContent+'\n'+$('#eta').textContent+'\n'+$('#route-evidence').textContent+'\nCheck height, lava and drops. X/Z directions do not account for terrain.';}
+  function routeText(){return 'Gordtopia Nether route: saved directions, not live navigation.\nFrom X '+$('#hx').value+', Z '+$('#hz').value+'.\n'+$('#steps').textContent+'\n'+$('#eta').textContent+'\n'+$('#route-evidence').textContent+'\nCheck height, lava and drops. X/Z directions do not account for terrain.';}
   $('#save-route').addEventListener('click',function(){if(!routeReady)return;
     try{localStorage.setItem(ROUTE_KEY,JSON.stringify({x:num($('#hx').value),z:num($('#hz').value),dest:dest.value}));$('#route-status').textContent='Route saved on this device. Recheck your Position when you return.';}
     catch(e){$('#route-status').textContent='This browser could not save the route. Print it or take a screenshot instead.';}
   });
   $('#print-route').addEventListener('click',function(){if(routeReady){$('#route-print').textContent=routeText();window.print();}});
-  function routeChanged(){way();$('#route-status').textContent=routeReady?'Route changed. Save again to keep these directions on this device.':'Enter whole-number X and Z coordinates from your Position.';}
+  function routeChanged(){way();$('#route-status').textContent=routeReady?'Route changed. Save again to keep these directions on this device.':'Enter your X and Z from your Position.';}
 
   function way(){
     var x=num($('#hx').value),z=num($('#hz').value),st=$('#steps'),eta=$('#eta'),home=$('#home');
     routeReady=x!==null&&z!==null;$('#save-route').disabled=!routeReady;$('#print-route').disabled=!routeReady;
-    if(!routeReady){st.innerHTML='<li><span class="arrow">?</span><span>Type whole-number X and Z coordinates.</span></li>';eta.textContent='';$('#route-evidence').textContent='';$('#route-print').textContent='';home.classList.remove('show');route.setAttribute('points','');me.setAttribute('cx',-20);me.setAttribute('cy',-20);return}
+    if(!routeReady){st.innerHTML='<li><span class="arrow">?</span><span>Type your X and Z.</span></li>';eta.textContent='';$('#route-evidence').textContent='';$('#route-print').textContent='';home.classList.remove('show');route.setAttribute('points','');me.setAttribute('cx',-20);me.setAttribute('cy',-20);return}
     var cand=G.filter(function(g){return g.k!=='g120'}),t;
     if(dest.value==='near'){cand=cand.filter(function(g){return g.lit});t=cand.reduce(function(b,g){var d=Math.abs(g.n[0]-x)+Math.abs(g.n[1]-z);return(!b||d<b.d)?{g:g,d:d}:b},null).g}
     else t=G.filter(function(g){return g.k===dest.value})[0];
@@ -326,9 +328,10 @@ footer{border-top:2px solid var(--ink);padding-block:18px 40px;font-size:13px;co
     me.setAttribute('cx',px);me.setAttribute('cy',py);
     route.setAttribute('points',px+','+py+' '+sx(t.n[0])+','+py+' '+sx(t.n[0])+','+nz(t.n[1]));
     /* the surprise: standing on the home spot */
-    var atHome=x===32&&z===308;
+    var atHome=Math.abs(x-32)+Math.abs(z-308)<=16;
     home.classList.toggle('show',atHome);
-    /* A planned coordinate never triggers the original arrival audio automatically. */
+    if(atHome&&!played){played=true;var b=home.querySelector('.say');if(b&&soundOk)b.click()}
+    if(!atHome)played=false;
     $('#route-print').textContent=routeText();
   }
   ['#hx','#hz'].forEach(function(s){$(s).addEventListener('input',routeChanged)});dest.addEventListener('change',routeChanged);
