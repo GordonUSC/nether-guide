@@ -9,6 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Karla:wght@400;600;800&family=Archivo+Narrow:wght@600;700&display=swap" rel="stylesheet">
 <!-- STYLE: Orienteering field card (Swiss topographic map tradition with Otl Aicher pictograms; Twenty Design Systems #3 Aicher). Light map paper, a real plotted map of his portals (Overworld band over Nether band, linked 8 to 1), control-point circles for the steps, magenta route line. FORBIDS: dark crimson hero, AI landscape scenes, big serif headline, card grid, typewriter labels | WHY: he feels lost, scared and confused there; a map you can read in five seconds is the calm, and the first useful action is "the way home from where I am" | ALT: 2.5D voxel cutaway of the portal network (rejected: the spatial cost is not earned for a second-screen lookup). -->
+<script>document.documentElement.classList.add('js')</script>
 <style>
 /* Layout: one folded field card. The map and the route finder first (the thing he needs when lost), then the course: pack, why gates surprise you, what to do when lost, three big moments, the road home. */
 :root{
@@ -94,6 +95,14 @@ th{font:700 13px var(--sans);color:var(--soft)}
 footer{border-top:2px solid var(--ink);padding-block:18px 40px;font-size:13px;color:var(--soft);display:grid;gap:6px}
 @media (max-width:820px){.lead{grid-template-columns:1fr}.lost{order:-1}.leg{grid-template-columns:1fr;gap:10px}.ctrl{width:44px;height:44px;font-size:19px}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}html{scroll-behavior:auto}}
+.route-print{display:none;white-space:pre-line}
+.route-tools{display:none}.js .route-tools{display:flex}
+@media print{
+  body{background:#fff;color:#000}.tools,.say,audio{display:none!important}
+  .route-print{display:block;border:2px solid #000;padding:12px}
+  .lost{break-inside:avoid}.lost .pair,.lost>label,.lost .steps,.lost #eta,.lost #route-evidence,.lost #route-status{display:none}
+  .mast,.mapbox{break-inside:avoid}a{color:inherit}
+}
 </style>
 
 <header class="card top">
@@ -117,13 +126,17 @@ footer{border-top:2px solid var(--ink);padding-block:18px 40px;font-size:13px;co
     <h2 id="t2">I'm lost. Get me home.</h2>
     <p>Read your Position (it's on your screen) and type your Nether X and Z.</p>
     <div class="pair">
-      <label for="hx">My X<input id="hx" inputmode="numeric" value="1500" autocomplete="off"></label>
-      <label for="hz">My Z<input id="hz" inputmode="numeric" value="260" autocomplete="off"></label>
+      <label for="hx">My X<input id="hx" inputmode="numeric" placeholder="e.g. 1500" autocomplete="off"></label>
+      <label for="hz">My Z<input id="hz" inputmode="numeric" placeholder="e.g. 260" autocomplete="off"></label>
     </div>
     <label class="small" for="dest" style="display:grid;gap:4px">Walk to<select id="dest"></select></label>
     <ol class="steps" id="steps" aria-live="polite"></ol>
     <p class="small" id="eta"></p>
-    <div class="home" id="home" role="status"><b>You're home.</b><p>This is the spot under your bell. Build your portal right here, and every trip starts and ends at home.</p><button type="button" class="say" data-say="audio/v7-home.mp3">Hear Lantern say it</button></div>
+    <p class="small" id="route-evidence"></p>
+    <div class="tools route-tools"><button type="button" id="save-route" disabled>Save this route</button><button type="button" id="print-route" disabled>Print this route</button></div>
+    <p class="small" id="route-status" role="status">Enter your current position. Saved on this device only.</p>
+    <p class="route-print" id="route-print"></p>
+    <div class="home" id="home" role="status"><b>You're home.</b><p>Build your portal here, then test it before your next trip.</p><button type="button" class="say" data-say="audio/v7-home.mp3">Hear Lantern say it</button></div>
     <p class="small">First, make a sheltered spot with cobblestone before you check your route. Then read, then walk. Watch for lava and drops: these directions do not account for terrain.</p>
   </div>
 </section>
@@ -276,13 +289,28 @@ footer{border-top:2px solid var(--ink);padding-block:18px 40px;font-size:13px;co
   var me=el('circle',{cx:-20,cy:-20,r:8,fill:'#c0287a',stroke:'#fff','stroke-width':2});
 
   /* the way home */
-  function num(v){var n=parseInt(String(v).replace(/[^\d-]/g,''),10);return isFinite(n)?n:null}
+  function num(v){var text=String(v).trim();if(!/^[+-]?(\d+\.?\d*|\.\d+)$/.test(text))return null;var n=Math.floor(Number(text));return Number.isSafeInteger(n)&&Math.abs(n)<=30000000?n:null}
   var dest=$('#dest');
-  dest.innerHTML='<option value="near">Nearest lit portal</option>'+G.filter(function(g){return g.k!=='g120'}).map(function(g){return '<option value="'+g.k+'">'+g.name+(g.plan?' (not built yet)':'')+'</option>'}).join('');
-  var played=false;
+  dest.innerHTML='<option value="near">Nearest lit portal</option>'+G.filter(function(g){return g.k!=='g120'}).map(function(g){return '<option value="'+g.k+'">'+g.name+(g.plan?' (not built yet)':g.likely?' (pair unconfirmed)':g.k==='blos'?' (not visited)':'')+'</option>'}).join('');
+  var played=false,routeReady=false,ROUTE_KEY='lantern-route-v1';
+  try{var last=JSON.parse(localStorage.getItem(ROUTE_KEY)||'null');
+    if(last&&num(last.x)!==null&&num(last.z)!==null&&(last.dest==='near'||G.some(function(g){return g.k===last.dest&&g.k!=='g120'}))){
+      $('#hx').value=last.x;$('#hz').value=last.z;dest.value=last.dest;
+      $('#route-status').textContent='Saved route restored. Recheck your current Position and portal status before walking.';
+    }
+  }catch(e){}
+  function routeText(){return 'Gordtopia Nether route: saved directions, not live navigation.\nFrom X '+$('#hx').value+', Z '+$('#hz').value+'.\n'+$('#steps').textContent+'\n'+$('#eta').textContent+'\n'+$('#route-evidence').textContent+'\nCheck height, lava and drops. X/Z directions do not account for terrain.';}
+  $('#save-route').addEventListener('click',function(){if(!routeReady)return;
+    try{localStorage.setItem(ROUTE_KEY,JSON.stringify({x:num($('#hx').value),z:num($('#hz').value),dest:dest.value}));$('#route-status').textContent='Route saved on this device. Recheck your Position when you return.';}
+    catch(e){$('#route-status').textContent='This browser could not save the route. Print it or take a screenshot instead.';}
+  });
+  $('#print-route').addEventListener('click',function(){if(routeReady){$('#route-print').textContent=routeText();window.print();}});
+  function routeChanged(){way();$('#route-status').textContent=routeReady?'Route changed. Save again to keep these directions on this device.':'Enter your X and Z from your Position.';}
+
   function way(){
     var x=num($('#hx').value),z=num($('#hz').value),st=$('#steps'),eta=$('#eta'),home=$('#home');
-    if(x===null||z===null){st.innerHTML='<li><span class="arrow">?</span><span>Type your X and Z.</span></li>';eta.textContent='';route.setAttribute('points','');return}
+    routeReady=x!==null&&z!==null;$('#save-route').disabled=!routeReady;$('#print-route').disabled=!routeReady;
+    if(!routeReady){st.innerHTML='<li><span class="arrow">?</span><span>Type your X and Z.</span></li>';eta.textContent='';$('#route-evidence').textContent='';$('#route-print').textContent='';home.classList.remove('show');route.setAttribute('points','');me.setAttribute('cx',-20);me.setAttribute('cy',-20);return}
     var cand=G.filter(function(g){return g.k!=='g120'}),t;
     if(dest.value==='near'){cand=cand.filter(function(g){return g.lit});t=cand.reduce(function(b,g){var d=Math.abs(g.n[0]-x)+Math.abs(g.n[1]-z);return(!b||d<b.d)?{g:g,d:d}:b},null).g}
     else t=G.filter(function(g){return g.k===dest.value})[0];
@@ -290,7 +318,9 @@ footer{border-top:2px solid var(--ink);padding-block:18px 40px;font-size:13px;co
     if(dx)rows.push([dx>0?'→':'←','Walk toward '+(dx>0?'bigger':'smaller')+' X ('+(dx>0?'east':'west')+') for '+Math.abs(dx)+' blocks, until X reads '+t.n[0]+'.']);
     if(dz)rows.push([dz>0?'↓':'↑','Then toward '+(dz>0?'bigger':'smaller')+' Z ('+(dz>0?'south':'north')+') for '+Math.abs(dz)+' blocks, until Z reads '+t.n[1]+'.']);
     var close=Math.abs(dx)+Math.abs(dz)<=16;
-    if(!rows.length||close)rows=[['✓','You are at '+t.name+'.'+(t.plan?' It is a plan: build the portal here.':' Step through.')]];
+    if(!rows.length)rows=[['✓','These X/Z coordinates match '+t.name+'. Check height and terrain.'+(t.plan?' The portal is planned, not built.':t.likely?' The portal pairing is unconfirmed.':' Locate the portal before stepping through.')]];
+    else if(close)rows.unshift(['•','You are near '+t.name+'. These are the remaining directions.']);
+    $('#route-evidence').textContent=t.plan?'Planned destination: no working portal is confirmed here.':t.likely?'Unconfirmed pairing: these coordinates come from the recorded screenshots, not a completed return walk.':t.k==='blos'?'Recorded as lit but not visited. Confirm the connection before relying on it.':'Recorded as lit and walked. Gate 132 and gate 120 share this Nether portal; your return can emerge at gate 120.';
     st.innerHTML=rows.map(function(r){return '<li><span class="arrow" aria-hidden="true">'+r[0]+'</span><span>'+r[1]+'</span></li>'}).join('');
     var d=Math.abs(dx)+Math.abs(dz);
     eta.textContent=close?'':'Going to '+t.name+': '+d+' blocks, about '+Math.max(1,Math.round(d/4.3/60))+' min walking, '+Math.max(1,Math.round(d/5.6/60))+' sprinting.';
@@ -302,8 +332,9 @@ footer{border-top:2px solid var(--ink);padding-block:18px 40px;font-size:13px;co
     home.classList.toggle('show',atHome);
     if(atHome&&!played){played=true;var b=home.querySelector('.say');if(b&&soundOk)b.click()}
     if(!atHome)played=false;
+    $('#route-print').textContent=routeText();
   }
-  ['#hx','#hz'].forEach(function(s){$(s).addEventListener('input',way)});dest.addEventListener('change',way);
+  ['#hx','#hz'].forEach(function(s){$(s).addEventListener('input',routeChanged)});dest.addEventListener('change',routeChanged);
 
   /* voice coach: one line at a time; music ducks while Lantern speaks */
   var voice=new Audio(),cur=null,theme=$('#theme'),soundOk=false;
